@@ -38,24 +38,33 @@ class DetectionController extends Controller
             ], 503);
         }
 
-        $prediction = $aiResponse['prediction'] ?? [];
-        $className = $prediction['class_name'] ?? null;
-        $disease = $className ? Disease::where('ai_class_name', $className)->first() : null;
+        $aiSuccess = (bool) ($aiResponse['success'] ?? false);
+        $prediction = is_array($aiResponse['prediction'] ?? null) ? $aiResponse['prediction'] : null;
+        $className = is_string($prediction['class_name'] ?? null) ? $prediction['class_name'] : null;
+        $disease = null;
 
-        if ($className && ! $disease) {
-            Log::warning('AI class name was not mapped to a disease.', [
-                'ai_class_name' => $className,
-            ]);
+        if ($prediction !== null && $className !== null) {
+            $disease = Disease::where('ai_class_name', $className)->first();
+
+            if (! $disease) {
+                Log::warning('AI class name was not mapped to a disease.', [
+                    'ai_class_name' => $className,
+                ]);
+            }
         }
 
         $needsRetake = (bool) ($aiResponse['needs_retake'] ?? false);
-        $validInput = (bool) ($aiResponse['valid_input'] ?? true);
+        $validInput = array_key_exists('valid_input', $aiResponse)
+            ? (bool) $aiResponse['valid_input']
+            : true;
         $classificationSource = $aiResponse['classification_source'] ?? null;
-        $message = match (true) {
-            ! $validInput => 'Gambar tidak valid untuk deteksi daun cabai.',
-            $needsRetake => 'Confidence terlalu rendah. Silakan ambil ulang foto.',
-            default => 'Deteksi berhasil.',
-        };
+        $message = is_string($aiResponse['message'] ?? null) && $aiResponse['message'] !== ''
+            ? $aiResponse['message']
+            : match (true) {
+                ! $validInput => 'Gambar tidak valid untuk deteksi daun cabai.',
+                $needsRetake => 'Confidence terlalu rendah. Silakan ambil ulang foto.',
+                default => 'Deteksi berhasil.',
+            };
 
         $detection = Detection::create([
             'user_id' => $request->user()->id,
@@ -76,12 +85,12 @@ class DetectionController extends Controller
         ])->load(['disease', 'user', 'correctedDisease', 'reviewer']);
 
         return response()->json([
-            'success' => true,
+            'success' => $aiSuccess,
             'message' => $message,
             'data' => [
                 'detection' => new DetectionResource($detection),
             ],
-        ], 201);
+        ], $aiSuccess ? 201 : 200);
     }
 
     public function index(Request $request): AnonymousResourceCollection

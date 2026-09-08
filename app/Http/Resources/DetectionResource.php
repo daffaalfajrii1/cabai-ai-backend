@@ -10,14 +10,20 @@ class DetectionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $prediction = $this->needs_retake
-            ? (object) []
-            : [
+        $showDiagnosis = $this->valid_input !== false
+            && ! $this->needs_retake
+            && $this->ai_class_name !== null;
+
+        $prediction = $showDiagnosis
+            ? [
                 'class_id' => $this->ai_class_id,
                 'class_name' => $this->ai_class_name,
                 'confidence' => $this->confidence === null ? null : (float) $this->confidence,
                 'confidence_percent' => $this->confidence_percent === null ? null : (float) $this->confidence_percent,
-            ];
+            ]
+            : null;
+
+        $raw = is_array($this->raw_ai_response) ? $this->raw_ai_response : [];
 
         return [
             'id' => $this->id,
@@ -25,9 +31,12 @@ class DetectionResource extends JsonResource
             'needs_retake' => $this->needs_retake,
             'message' => $this->message,
             'status' => $this->status,
+            'reason' => $raw['reason'] ?? null,
             'prediction' => $prediction,
-            'top_predictions' => $this->needs_retake ? [] : ($this->top_predictions ?? []),
-            'disease' => $this->needs_retake ? null : $this->whenLoaded('disease', fn () => $this->disease ? new DiseaseResource($this->disease) : null),
+            'top_predictions' => $showDiagnosis ? ($this->top_predictions ?? []) : [],
+            'disease' => $showDiagnosis
+                ? $this->whenLoaded('disease', fn () => $this->disease ? new DiseaseResource($this->disease) : null)
+                : null,
             'valid_input' => $this->valid_input,
             'classification_source' => $this->classification_source,
             'review' => [

@@ -11,7 +11,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@cabai-ai.local'],
+            ['email' => 'admincabai@rejanglebongkab.go.id'],
             [
                 'name' => 'Admin Cabai AI',
                 'password' => Hash::make('password'),
