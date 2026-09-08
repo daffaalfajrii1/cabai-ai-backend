@@ -18,9 +18,7 @@ use Illuminate\Support\Str;
 
 class DetectionController extends Controller
 {
-    public function __construct(private readonly AiPredictionService $aiPredictionService)
-    {
-    }
+    public function __construct(private readonly AiPredictionService $aiPredictionService) {}
 
     public function store(StoreDetectionRequest $request): JsonResponse
     {
@@ -51,9 +49,13 @@ class DetectionController extends Controller
         }
 
         $needsRetake = (bool) ($aiResponse['needs_retake'] ?? false);
-        $message = $needsRetake
-            ? 'Confidence terlalu rendah. Silakan ambil ulang foto.'
-            : 'Deteksi berhasil.';
+        $validInput = (bool) ($aiResponse['valid_input'] ?? true);
+        $classificationSource = $aiResponse['classification_source'] ?? null;
+        $message = match (true) {
+            ! $validInput => 'Gambar tidak valid untuk deteksi daun cabai.',
+            $needsRetake => 'Confidence terlalu rendah. Silakan ambil ulang foto.',
+            default => 'Deteksi berhasil.',
+        };
 
         $detection = Detection::create([
             'user_id' => $request->user()->id,
@@ -64,11 +66,14 @@ class DetectionController extends Controller
             'confidence' => $prediction['confidence'] ?? null,
             'confidence_percent' => $prediction['confidence_percent'] ?? null,
             'needs_retake' => $needsRetake,
+            'valid_input' => $validInput,
+            'classification_source' => $classificationSource,
             'message' => $message,
             'top_predictions' => $aiResponse['top_predictions'] ?? [],
             'raw_ai_response' => $aiResponse,
             'status' => 'success',
-        ])->load(['disease', 'user']);
+            'review_status' => Detection::REVIEW_PENDING,
+        ])->load(['disease', 'user', 'correctedDisease', 'reviewer']);
 
         return response()->json([
             'success' => true,
@@ -84,7 +89,7 @@ class DetectionController extends Controller
         $this->authorize('viewAny', Detection::class);
 
         $query = Detection::query()
-            ->with(['disease', 'user'])
+            ->with(['disease', 'user', 'correctedDisease', 'reviewer'])
             ->latest();
 
         if (! $request->user()->isAdmin()) {
@@ -105,7 +110,7 @@ class DetectionController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'detection' => new DetectionResource($detection->load(['disease', 'user'])),
+                'detection' => new DetectionResource($detection->load(['disease', 'user', 'correctedDisease', 'reviewer'])),
             ],
         ]);
     }

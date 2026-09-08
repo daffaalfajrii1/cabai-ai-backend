@@ -16,6 +16,7 @@ class AdminSeeder extends Seeder
                 'name' => 'Admin Cabai AI',
                 'password' => Hash::make('password'),
                 'role' => 'admin',
+                'is_active' => true,
             ]
         );
     }

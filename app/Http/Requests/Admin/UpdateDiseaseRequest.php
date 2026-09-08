@@ -21,6 +21,7 @@ class UpdateDiseaseRequest extends FormRequest
             'cause' => ['nullable', 'string'],
             'treatment' => ['nullable', 'string'],
             'prevention' => ['nullable', 'string'],
+            'is_healthy' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

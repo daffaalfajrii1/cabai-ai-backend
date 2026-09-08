@@ -71,6 +71,8 @@ class AiPredictionService
 
     public function health(): array
     {
+        $startedAt = microtime(true);
+
         try {
             $response = Http::timeout(5)->acceptJson()->get($this->endpoint('/health'));
         } catch (Throwable $exception) {
@@ -81,6 +83,8 @@ class AiPredictionService
             return [
                 'online' => false,
                 'data' => null,
+                'checked_at' => now(),
+                'response_time_ms' => round((microtime(true) - $startedAt) * 1000, 2),
             ];
         }
 
@@ -88,11 +92,15 @@ class AiPredictionService
             'online' => $response->successful(),
             'data' => $response->json(),
             'status' => $response->status(),
+            'checked_at' => now(),
+            'response_time_ms' => round((microtime(true) - $startedAt) * 1000, 2),
         ];
     }
 
     public function modelInfo(): array
     {
+        $startedAt = microtime(true);
+
         try {
             $response = Http::timeout(5)->acceptJson()->get($this->endpoint('/model-info'));
         } catch (Throwable $exception) {
@@ -103,6 +111,8 @@ class AiPredictionService
             return [
                 'online' => false,
                 'data' => null,
+                'checked_at' => now(),
+                'response_time_ms' => round((microtime(true) - $startedAt) * 1000, 2),
             ];
         }
 
@@ -110,6 +120,8 @@ class AiPredictionService
             'online' => $response->successful(),
             'data' => $response->json(),
             'status' => $response->status(),
+            'checked_at' => now(),
+            'response_time_ms' => round((microtime(true) - $startedAt) * 1000, 2),
         ];
     }
 

@@ -42,6 +42,11 @@
 @endforeach
 
 <label class="flex items-center gap-2 text-sm font-medium text-stone-700">
+    <input type="checkbox" name="is_healthy" value="1" @checked(old('is_healthy', $disease->is_healthy)) class="rounded border-stone-300 text-emerald-700 focus:ring-emerald-600">
+    Daun sehat
+</label>
+
+<label class="flex items-center gap-2 text-sm font-medium text-stone-700">
     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $disease->is_active)) class="rounded border-stone-300 text-emerald-700 focus:ring-emerald-600">
     Aktif
 </label>

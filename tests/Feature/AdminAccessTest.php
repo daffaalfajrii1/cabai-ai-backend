@@ -20,6 +20,15 @@ class AdminAccessTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_regular_user_is_rejected_from_admin_users(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+
+        $this->actingAs($user)
+            ->get('/admin/users')
+            ->assertForbidden();
+    }
+
     public function test_admin_can_open_dashboard(): void
     {
         Http::fake([

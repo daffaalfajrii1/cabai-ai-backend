@@ -21,6 +21,7 @@ class AuthController extends Controller
             'email' => (string) $request->string('email'),
             'password' => (string) $request->string('password'),
             'role' => 'user',
+            'is_active' => true,
         ]);
 
         $token = $user->createToken($request->input('device_name', 'flutter'))->plainTextToken;
@@ -42,6 +43,12 @@ class AuthController extends Controller
         if (! $user || ! Hash::check((string) $request->string('password'), $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Email atau password tidak sesuai.'],
+            ]);
+        }
+
+        if (! $user->isActive()) {
+            throw ValidationException::withMessages([
+                'email' => ['Akun ini nonaktif. Hubungi admin.'],
             ]);
         }
 

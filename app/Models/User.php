@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'is_active',
     ];
 
     /**
@@ -47,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -55,8 +58,23 @@ class User extends Authenticatable
         return $this->hasMany(Detection::class);
     }
 
+    public function reviewedDetections(): HasMany
+    {
+        return $this->hasMany(Detection::class, 'reviewed_by');
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active !== false;
+    }
+
+    public function scopeActiveAdmins(Builder $query): Builder
+    {
+        return $query->where('role', 'admin')->where('is_active', true);
     }
 }

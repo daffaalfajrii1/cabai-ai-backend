@@ -28,6 +28,16 @@ class DetectionResource extends JsonResource
             'prediction' => $prediction,
             'top_predictions' => $this->needs_retake ? [] : ($this->top_predictions ?? []),
             'disease' => $this->needs_retake ? null : $this->whenLoaded('disease', fn () => $this->disease ? new DiseaseResource($this->disease) : null),
+            'valid_input' => $this->valid_input,
+            'classification_source' => $this->classification_source,
+            'review' => [
+                'status' => $this->reviewStatus(),
+                'label' => $this->reviewStatusLabel(),
+                'corrected_disease' => $this->whenLoaded('correctedDisease', fn () => $this->correctedDisease ? new DiseaseResource($this->correctedDisease) : null),
+                'reviewed_by' => $this->whenLoaded('reviewer', fn () => $this->reviewer ? new UserResource($this->reviewer) : null),
+                'reviewed_at' => $this->reviewed_at?->toISOString(),
+                'notes' => $this->review_notes,
+            ],
             'user' => $this->whenLoaded('user', fn () => $this->user ? new UserResource($this->user) : null),
             'created_at' => $this->created_at?->toISOString(),
         ];

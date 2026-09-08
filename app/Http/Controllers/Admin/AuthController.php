@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AdminAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,6 +31,16 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if (! $request->user()->isActive()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['email' => 'Akun ini nonaktif. Hubungi admin.'])
+                ->onlyInput('email');
+        }
+
         if (! $request->user()->isAdmin()) {
             Auth::logout();
             $request->session()->invalidate();
@@ -39,6 +50,8 @@ class AuthController extends Controller
                 ->withErrors(['email' => 'Akun ini tidak memiliki akses admin.'])
                 ->onlyInput('email');
         }
+
+        AdminAudit::record($request->user(), 'admin.login', $request->user(), 'Admin login.');
 
         return redirect()->intended(route('dashboard'));
     }

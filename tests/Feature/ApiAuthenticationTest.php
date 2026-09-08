@@ -34,6 +34,23 @@ class ApiAuthenticationTest extends TestCase
         ]);
     }
 
+    public function test_register_always_creates_regular_user_role(): void
+    {
+        $this->postJson('/api/register', [
+            'name' => 'Daffa',
+            'email' => 'new-user@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'admin',
+        ])->assertCreated()
+            ->assertJsonPath('data.user.role', 'user');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'new-user@example.com',
+            'role' => 'user',
+        ]);
+    }
+
     public function test_login_success(): void
     {
         User::factory()->create([
@@ -69,6 +86,22 @@ class ApiAuthenticationTest extends TestCase
             'password' => 'wrong-password',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_inactive_user_cannot_login(): void
+    {
+        User::factory()->create([
+            'email' => 'inactive@example.com',
+            'password' => 'password',
+            'is_active' => false,
+        ]);
+
+        $this->postJson('/api/login', [
+            'email' => 'inactive@example.com',
+            'password' => 'password',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'Akun ini nonaktif. Hubungi admin.');
     }
 
     public function test_protected_route_requires_auth(): void
